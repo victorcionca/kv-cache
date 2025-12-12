@@ -11,8 +11,8 @@
  * should be removed
  */
 
-#define MAP_CAPACITY    1000
-#define MAP_BUCKETS     128
+#define MAP_CAPACITY    4000
+#define MAP_BUCKETS     512
 
 /* Entry in the LRU list; refs the table bucket (list) and the node in the bucket */
 typedef struct {
@@ -45,6 +45,12 @@ LRUEntry *new_lru_entry(List *l, Node *n);
  * If the map is full the LRU entry will be evicted.
  */
 Entry *put(Map *map, const char *key, unsigned char *value, int value_length);
+/*
+ * Insert a new key into the map.
+ * Does not check the existence of the key. The new entry is appended to
+ * the end of the bucket, if there is capacity.
+ */
+Entry *insert(Map *map, const char *key, unsigned char *value, int value_length);
 /* Get a value from the map, if it exists, otherwise return NULL */
 Entry *get(Map *map, const char *key);
 void destroy_map(Map *map);

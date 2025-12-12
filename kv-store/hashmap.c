@@ -49,11 +49,56 @@ static unsigned int hash_function(const char *key) {
     return val;
 }
 
-int cmp(void *entry1_v, void *entry2_v) {
-    Entry *entry1 = (Entry*) entry1_v;
-    Entry *entry2 = (Entry*) entry2_v;
+int mystrcmp(const char *s1, const char *s2){
+    while (1){
+        int res = ((*s1==0) || (*s1 != *s2));
+        if (__builtin_expect((res),0)) break;
+        ++s1; ++s2;
+    }
 
-    return !strcmp(entry1->key, entry2->key);    // TODO make this safe
+    return (*s1-*s2);
+}
+
+/* Compare keys for two entries. Return 1 if same, 0 if diff */
+int cmp(void *entry1_v, void *entry2_v) {
+    char *key1 = ((Entry*) entry1_v)->key;
+    char *key2 = ((Entry*) entry2_v)->key;
+
+    //while (*key1 && !(*key1 ^ *key2)){
+    //    key1++; key2++;
+    //}
+    //
+    //return *key1 == *key2;
+    return !strcmp(key1, key2);
+}
+
+Entry *insert(Map *map, const char *key, unsigned char *value, int value_length) {
+    // Find the bucket
+    unsigned int bucket_id = hash_function(key) % MAP_BUCKETS;
+    List *bucket = map->table[bucket_id];
+    Entry *e = new_entry(key, value, value_length);
+    // New key, append to this bucket
+    // check capacity, evict if necessary
+    if (map_is_full(map)) {
+        // Map is full, we must evict the LRU
+        LRUEntry *lru_e = (LRUEntry*)map->lru->tail->data;
+        // Free the map node data
+        free(lru_e->node->data);
+        delete_node(lru_e->list, lru_e->node);
+        delete_node(map->lru, map->lru->tail);
+        // Free the LRU entry
+        free(lru_e);
+        map->num_entries --;
+    }
+    Node *new_node = insert_tail(bucket, (void*)e);
+    map->num_entries ++;
+    // Update LRU, insert new entry at the head
+    LRUEntry *lru_e = new_lru_entry(bucket, new_node);
+    Node *lru_n = insert_head(map->lru, (void*)lru_e);
+    // Connect new lru node to map entry for fast lookup
+    e->lru_entry = lru_n;
+
+    return e;
 }
 
 Entry *put(Map *map, const char *key, unsigned char *value, int value_length) {
