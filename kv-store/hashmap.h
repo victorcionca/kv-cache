@@ -11,8 +11,8 @@
  * should be removed
  */
 
-#define MAP_CAPACITY    4000
-#define MAP_BUCKETS     512
+#define MAP_CAPACITY    16000
+#define MAP_BUCKETS     2048
 
 /* Entry in the LRU list; refs the table bucket (list) and the node in the bucket */
 typedef struct {

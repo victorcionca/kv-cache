@@ -35,8 +35,9 @@ LRUEntry* new_lru_entry(List *l, Node *n) {
     return new_e;
 }
 
+
 /* Stroustrup hash function */
-static unsigned int hash_function(const char *key) {
+static unsigned int stroustrup_hash(const char *key) {
     unsigned int val = 0;
 
     for (int i=0;key[i]!=0;i++){
@@ -47,6 +48,37 @@ static unsigned int hash_function(const char *key) {
     }
 
     return val;
+}
+
+static unsigned int djb2_hash(const char *key) {
+    unsigned long hash = 5381;
+    int c;
+
+    while (c= *key++) {
+        hash = ((hash << 5) + hash) + c;
+    }
+    return hash;
+}
+#define STR     1
+#define DJB2    2
+#define MURMUR  3
+
+#ifndef HASH
+#define HASH STR
+#endif
+
+#if HASH == MURMUR
+#include "murmur.h"
+#endif
+
+static unsigned int hash_function(const char *key){
+#if HASH == STR
+    return stroustrup_hash(key);
+#elif HASH == DJB2
+    return djb2_hash(key);
+#elif HASH == MURMUR
+    return murmur3_32(key, strlen(key), 1);
+#endif
 }
 
 int mystrcmp(const char *s1, const char *s2){
