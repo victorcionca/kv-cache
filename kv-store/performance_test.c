@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/time.h>
 
+#define VALUE_SIZE 10
 
 static const char *keys[] = {
     "zero",
@@ -18,10 +19,15 @@ static const int num_keys = 20;
 
 static char* number_to_word(int nnumber, char *number) {
     if (nnumber < 20) return keys[nnumber];
-    int hundreds = nnumber/100;
+    int thousands = nnumber/1000;
+    int hundreds = (nnumber%1000)/100;
     int tenths = (nnumber%100)/10;
     int digits = nnumber%10;
     int number_len = 0;
+    if (thousands > 0){
+        sprintf(number, "%sthousand", keys[thousands]);
+        number_len += strlen(keys[thousands])+8;
+    }
     if (hundreds > 0){
         sprintf(number, "%shundred", keys[hundreds]);
         number_len += strlen(keys[hundreds])+7;
@@ -46,7 +52,7 @@ int main(int argc, char *argv[]) {
         table_keys[i] = malloc(50);
         number_to_word(i, table_keys[i]);
     }
-    int value_length = 10000;
+    int value_length = VALUE_SIZE;
     unsigned char *value = malloc(value_length);
     memset(value, 'a', value_length);
 
@@ -66,9 +72,15 @@ int main(int argc, char *argv[]) {
     gettimeofday(&end_fill, NULL);
 
     // Query the table randomly
-    for (int i=0;i<1000;i++){
-        int key_num = random()%MAP_CAPACITY;
-        get(map, table_keys[key_num]);
+    // We will generate a new key list to recreate similar conditions to put,
+    // where the key array has a good chance of being in the cache, and there
+    // is no random access penalty
+    for (int i=0;i<MAP_CAPACITY;i++){
+        number_to_word(random()%MAP_CAPACITY, table_keys[i]);
+    }
+    for (int i=0;i<MAP_CAPACITY;i++){
+        //int key_num = random()%MAP_CAPACITY;
+        get(map, table_keys[i]);
     }
 
     gettimeofday(&end_query, NULL);
